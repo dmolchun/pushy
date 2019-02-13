@@ -23,6 +23,7 @@
 package com.turo.pushy.apns;
 
 import com.turo.pushy.apns.auth.ApnsSigningKey;
+import com.turo.pushy.apns.auth.AuthenticationTokenManager;
 import com.turo.pushy.apns.proxy.ProxyHandlerFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http2.Http2FrameLogger;
@@ -61,6 +62,7 @@ public class ApnsClientBuilder {
     private String privateKeyPassword;
 
     private ApnsSigningKey signingKey;
+    private AuthenticationTokenManager authenticationTokenManager;
 
     private File trustedServerCertificatePemFile;
     private InputStream trustedServerCertificateInputStream;
@@ -275,6 +277,22 @@ public class ApnsClientBuilder {
      */
     public ApnsClientBuilder setSigningKey(final ApnsSigningKey signingKey) {
         this.signingKey = signingKey;
+
+        return this;
+    }
+
+    /**
+     * <p>Sets the authentication token handler for the client under construction. Clients constructed with a
+     * token-based authentication will use this handler for token update.</p>
+     *
+     * @param authenticationTokenManager the token handler to be used by the client under construction
+     *
+     * @return a reference to this builder
+     *
+     * @since 0.14
+     */
+    public ApnsClientBuilder setAuthenticationTokenManager(final AuthenticationTokenManager authenticationTokenManager) {
+        this.authenticationTokenManager = authenticationTokenManager;
 
         return this;
     }
@@ -505,10 +523,10 @@ public class ApnsClientBuilder {
             throw new IllegalStateException("No APNs server address specified.");
         }
 
-        if (this.clientCertificate == null && this.privateKey == null && this.signingKey == null) {
+        if (this.clientCertificate == null && this.privateKey == null && this.signingKey == null && this.authenticationTokenManager == null) {
             throw new IllegalStateException("No client credentials specified; either TLS credentials (a " +
                     "certificate/private key) or an APNs signing key must be provided before building a client.");
-        } else if ((this.clientCertificate != null || this.privateKey != null) && this.signingKey != null) {
+        } else if ((this.clientCertificate != null || this.privateKey != null) && (this.signingKey != null || this.authenticationTokenManager != null)) {
             throw new IllegalStateException("Clients may not have both a signing key and TLS credentials.");
         }
 
@@ -543,10 +561,15 @@ public class ApnsClientBuilder {
             sslContext = sslContextBuilder.build();
         }
 
-        final ApnsClient client = new ApnsClient(this.apnsServerAddress, sslContext, this.signingKey,
-                this.proxyHandlerFactory, this.connectionTimeoutMillis, this.idlePingIntervalMillis,
-                this.gracefulShutdownTimeoutMillis, this.concurrentConnections, this.metricsListener,
-                this.frameLogger, this.eventLoopGroup);
+        if (this.authenticationTokenManager == null) {
+            this.authenticationTokenManager = new AuthenticationTokenManager(signingKey);
+        }
+
+        final ApnsClient client = new ApnsClient(this.apnsServerAddress, sslContext,
+            this.authenticationTokenManager, this.proxyHandlerFactory, this.connectionTimeoutMillis,
+            this.idlePingIntervalMillis, this.gracefulShutdownTimeoutMillis,
+            this.concurrentConnections, this.metricsListener, this.frameLogger,
+            this.eventLoopGroup);
 
         if (sslContext instanceof ReferenceCounted) {
             ((ReferenceCounted) sslContext).release();

@@ -22,7 +22,7 @@
 
 package com.turo.pushy.apns;
 
-import com.turo.pushy.apns.auth.ApnsSigningKey;
+import com.turo.pushy.apns.auth.AuthenticationTokenManager;
 import com.turo.pushy.apns.proxy.ProxyHandlerFactory;
 import com.turo.pushy.apns.util.concurrent.PushNotificationFuture;
 import com.turo.pushy.apns.util.concurrent.PushNotificationResponseListener;
@@ -130,7 +130,7 @@ public class ApnsClient {
     }
 
     protected ApnsClient(final InetSocketAddress apnsServerAddress, final SslContext sslContext,
-                         final ApnsSigningKey signingKey, final ProxyHandlerFactory proxyHandlerFactory,
+                         final AuthenticationTokenManager authenticationTokenManager, final ProxyHandlerFactory proxyHandlerFactory,
                          final int connectTimeoutMillis, final long idlePingIntervalMillis,
                          final long gracefulShutdownTimeoutMillis, final int concurrentConnections,
                          final ApnsClientMetricsListener metricsListener, final Http2FrameLogger frameLogger,
@@ -146,7 +146,7 @@ public class ApnsClient {
 
         this.metricsListener = metricsListener != null ? metricsListener : new NoopApnsClientMetricsListener();
 
-        final ApnsChannelFactory channelFactory = new ApnsChannelFactory(sslContext, signingKey, proxyHandlerFactory,
+        final ApnsChannelFactory channelFactory = new ApnsChannelFactory(sslContext, authenticationTokenManager, proxyHandlerFactory,
                 connectTimeoutMillis, idlePingIntervalMillis, gracefulShutdownTimeoutMillis, frameLogger,
                 apnsServerAddress, this.eventLoopGroup);
 

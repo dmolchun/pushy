@@ -22,7 +22,7 @@
 
 package com.turo.pushy.apns;
 
-import com.turo.pushy.apns.auth.ApnsSigningKey;
+import com.turo.pushy.apns.auth.AuthenticationTokenManager;
 import com.turo.pushy.apns.proxy.ProxyHandlerFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -85,7 +85,7 @@ class ApnsChannelFactory implements PooledObjectFactory<Channel>, Closeable {
         }
     }
 
-    ApnsChannelFactory(final SslContext sslContext, final ApnsSigningKey signingKey,
+    ApnsChannelFactory(final SslContext sslContext, final AuthenticationTokenManager authenticationTokenManager,
                        final ProxyHandlerFactory proxyHandlerFactory, final int connectTimeoutMillis,
                        final long idlePingIntervalMillis, final long gracefulShutdownTimeoutMillis,
                        final Http2FrameLogger frameLogger, final InetSocketAddress apnsServerAddress,
@@ -131,9 +131,9 @@ class ApnsChannelFactory implements PooledObjectFactory<Channel>, Closeable {
 
                             final ApnsClientHandler.ApnsClientHandlerBuilder clientHandlerBuilder;
 
-                            if (signingKey != null) {
+                            if (authenticationTokenManager != null) {
                                 clientHandlerBuilder = new TokenAuthenticationApnsClientHandler.TokenAuthenticationApnsClientHandlerBuilder()
-                                        .signingKey(signingKey)
+                                        .tokenManager(authenticationTokenManager)
                                         .authority(authority)
                                         .idlePingIntervalMillis(idlePingIntervalMillis);
                             } else {
