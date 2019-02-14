@@ -283,7 +283,8 @@ public class ApnsClientBuilder {
 
     /**
      * <p>Sets the authentication token handler for the client under construction. Clients constructed with a
-     * token-based authentication will use this handler for token update.</p>
+     * token-based authentication will use this handler for token update. If both signing key and authentication
+     * token manager has set, authentication token manager has priority. Signing key is ignored</p>
      *
      * @param authenticationTokenManager the token handler to be used by the client under construction
      *
@@ -525,9 +526,11 @@ public class ApnsClientBuilder {
 
         if (this.clientCertificate == null && this.privateKey == null && this.signingKey == null && this.authenticationTokenManager == null) {
             throw new IllegalStateException("No client credentials specified; either TLS credentials (a " +
-                    "certificate/private key) or an APNs signing key must be provided before building a client.");
+                    "certificate/private key) or an APNs signing key (or authentication token manager) " +
+                    "must be provided before building a client.");
         } else if ((this.clientCertificate != null || this.privateKey != null) && (this.signingKey != null || this.authenticationTokenManager != null)) {
-            throw new IllegalStateException("Clients may not have both a signing key and TLS credentials.");
+            throw new IllegalStateException("Clients may not have both a signing key (or authentication token manager) " +
+                    "and TLS credentials.");
         }
 
         final SslContext sslContext;
@@ -563,6 +566,9 @@ public class ApnsClientBuilder {
 
         if (this.authenticationTokenManager == null) {
             this.authenticationTokenManager = new AuthenticationTokenManager(signingKey);
+        } else if (signingKey != null) {
+            log.warn("Both signing key and authentication token manager are set. Authentication token manager has " +
+                    "priority in that case. Signing key is ignored");
         }
 
         final ApnsClient client = new ApnsClient(this.apnsServerAddress, sslContext,
